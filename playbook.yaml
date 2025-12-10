@@ -1,5 +1,5 @@
 - hosts: all
-  name: Install Apache and PHP
+  name: Install Apache, php, mariadb, mediawiki, python3
   become: yes
   tasks:
     - name: Install packages 
