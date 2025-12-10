@@ -56,7 +56,7 @@ resource "google_compute_firewall" "allow_icmp" {
 }
 
 resource "google_service_account" "vm_sa" {
-  account_id   = "vm-instance-sa"
+  account_id   = "vm-wiki-sa"
   display_name = "VM Instance Service Account"
 }
 
