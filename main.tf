@@ -55,6 +55,11 @@ resource "google_compute_firewall" "allow_icmp" {
   target_tags   = ["web"]
 }
 
+resource "google_service_account" "vm_sa" {
+  account_id   = "vm-instance-sa"
+  display_name = "VM Instance Service Account"
+}
+
 resource "google_compute_instance" "vm_instance" {
   name         = "terraform-instance"
   machine_type = "e2-medium"
@@ -71,6 +76,11 @@ resource "google_compute_instance" "vm_instance" {
     network = google_compute_network.vpc_network.name
     access_config {
     }
+  }
+
+  service_account {
+    email  = google_service_account.vm_sa.email
+    scopes = ["cloud-platform"]
   }
 }
 
