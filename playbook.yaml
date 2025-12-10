@@ -9,3 +9,6 @@
         name:
           - apache2
           - php
+          - mariadb-server
+          - mediawiki
+          - python3-pymysql
