@@ -1,7 +1,26 @@
 - hosts: all
-  name: Install Apache, php, mariadb, mediawiki, python3
+  name: Install Apache, php, mariadb, mediawiki, python3, attach db-backup
   become: yes
   tasks:
+    - name: Format the persistent disk
+      community.general.filesystem:
+        fstype: ext4
+        dev: /dev/disk/by-id/google-db-backup
+        force: no
+
+    - name: Create mount point for MariaDB
+      ansible.builtin.file:
+        path: /var/lib/mysql
+        state: directory
+        mode: '0755'
+
+    - name: Mount the persistent disk
+      ansible.posix.mount:
+        path: /var/lib/mysql
+        src: /dev/disk/by-id/google-db-backup
+        fstype: ext4
+        state: mounted
+
     - name: Install packages 
       ansible.builtin.apt:
         update_cache: yes

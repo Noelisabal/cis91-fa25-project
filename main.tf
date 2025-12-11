@@ -60,11 +60,23 @@ resource "google_service_account" "vm_sa" {
   display_name = "VM Instance Service Account"
 }
 
+resource "google_compute_disk" "db_backup_disk" {
+  name = "db-backup"
+  type = "pd-balanced"
+  zone = var.zone
+  size = 10
+}
+
 resource "google_compute_instance" "vm_instance" {
   name         = "terraform-instance"
   machine_type = "e2-medium"
   tags         = ["web", "dev"]
   allow_stopping_for_update =  true
+
+  attached_disk {
+    source      = google_compute_disk.db_backup_disk.self_link
+    device_name = "db-backup"
+  }
 
   boot_disk {
     initialize_params {
