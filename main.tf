@@ -80,6 +80,21 @@ resource "google_service_account" "vm_sa" {
   display_name = "VM Instance Service Account"
 }
 
+# IAM binding for monitoring
+resource "google_project_iam_member" "monitoring_writer" {
+  project = var.project
+  role    = "roles/monitoring.metricWriter"
+  member  = "serviceAccount:${google_service_account.vm_sa.email}"
+}
+
+# IAM binding for logging
+resource "google_project_iam_member" "logging_writer" {
+  project = var.project
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.vm_sa.email}"
+}
+
+
 #persistent disk for backup
 resource "google_compute_disk" "db_backup_disk" {
   name = "db-backup"
@@ -140,5 +155,11 @@ resource "google_compute_instance" "database_instance" {
 
   metadata = {
     google-ops-agent-policy = "{\"agentRules\":[{\"type\":\"ops-agent\",\"version\":\"latest\",\"packageState\":\"installed\"}]}"
+  }
+
+  #attaches SA to vm
+  service_account {
+    email  = google_service_account.vm_sa.email
+    scopes = ["cloud-platform"]
   }
 }

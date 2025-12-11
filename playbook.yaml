@@ -1,6 +1,15 @@
 - hosts: tags_items___db__
   name: Prepare storage for mysql.
   become: yes
+
+  pre_tasks:
+    - name: Download Ops Agent repository script
+      ansible.builtin.get_url:
+        url: https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+        dest: /tmp/add-google-cloud-ops-agent-repo.sh
+        mode: '0755'
+    - name: Install Ops Agent
+      ansible.builtin.command: /tmp/add-google-cloud-ops-agent-repo.sh --also-install
   
   tasks:
     - name: Format the persistent disk
@@ -46,6 +55,16 @@
 - hosts: tags_items___web__
   name: Prepare web instance for mediawiki.
   become: yes
+
+  pre_tasks:
+    - name: Download Ops Agent repository script
+      ansible.builtin.get_url:
+        url: https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh
+        dest: /tmp/add-google-cloud-ops-agent-repo.sh
+        mode: '0755'
+    - name: Install Ops Agent
+      ansible.builtin.command: /tmp/add-google-cloud-ops-agent-repo.sh --also-install
+
   tasks: 
     - name: Install Apache, php, mediawiki, python3.
       ansible.builtin.apt:
@@ -56,3 +75,18 @@
           - php
           - mediawiki
           - python3-pymysql
+          
+    - name: Copy to google logging config
+      ansible.builtin.copy:
+        src: config.yaml
+        dest: /etc/google-cloud-ops-agent/config.yaml
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart logging
+
+  handlers:
+    - name: Restart logging
+      ansible.builtin.service:
+        name: google-cloud-ops-agent
+        state: restarted
