@@ -7,16 +7,19 @@ terraform {
   }
 }
 
+#variables for project location and zone
 provider "google" {
   project = var.project
   region  = var.region
   zone    = var.zone
 }
 
+#VPC network
 resource "google_compute_network" "vpc_network" {
   name = "terraform-network"
 }
 
+#firewall rules
 resource "google_compute_firewall" "allow_ssh" {
   name    = "allow-ssh"
   network = google_compute_network.vpc_network.self_link
@@ -55,47 +58,67 @@ resource "google_compute_firewall" "allow_icmp" {
   target_tags   = ["web"]
 }
 
+#service account for VMs
 resource "google_service_account" "vm_sa" {
   account_id   = "vm-wiki-sa"
   display_name = "VM Instance Service Account"
 }
 
+#persistent disk for backup
 resource "google_compute_disk" "db_backup_disk" {
   name = "db-backup"
   type = "pd-balanced"
   zone = var.zone
   size = 10
 }
-
-resource "google_compute_instance" "vm_instance" {
-  name         = "terraform-instance"
+#first VM instance for database
+resource "google_compute_instance" "database_instance" {
+  name         = "db-instance"
   machine_type = "e2-medium"
-  tags         = ["web", "dev"]
+  tags         = ["db"]
   allow_stopping_for_update =  true
 
-  attached_disk {
-    source      = google_compute_disk.db_backup_disk.self_link
-    device_name = "db-backup"
-  }
 
-  boot_disk {
+ boot_disk {
     initialize_params {
       image = "debian-cloud/debian-12"
     }
   }
-
+  #attaches disk to vm
+  attached_disk {
+    source      = google_compute_disk.db_backup_disk.self_link
+    device_name = "db-backup"
+  }
+  
   network_interface {
     network = google_compute_network.vpc_network.name
-    access_config {
-    }
   }
 
+  #attaches SA to vm
   service_account {
     email  = google_service_account.vm_sa.email
     scopes = ["cloud-platform"]
   }
 }
 
-output "ip" {
-  value = google_compute_instance.vm_instance.network_interface.0.access_config.0.nat_ip
+#second VM instance for mediawiki
+ resource "google_compute_instance" "web_instance" {
+  name         = "web-instance"
+  machine_type = "e2-medium"
+  tags         = ["web"]
+  allow_stopping_for_update =  true
+
+  boot_disk {
+    initialize_params {
+      image = "debian-cloud/debian-12"
+    }
+  }
+  
+  network_interface {
+    network = google_compute_network.vpc_network.name
+    access_config {
+    }
+  }
 }
+
+
