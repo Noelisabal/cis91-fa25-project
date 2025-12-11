@@ -19,7 +19,7 @@ resource "google_compute_network" "vpc_network" {
   name = "terraform-network"
 }
 
-#firewall rules
+#firewall rule to allow ssh
 resource "google_compute_firewall" "allow_ssh" {
   name    = "allow-ssh"
   network = google_compute_network.vpc_network.self_link
@@ -30,9 +30,10 @@ resource "google_compute_firewall" "allow_ssh" {
   }
 
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["web"]
+  target_tags   = ["web", "db"]
 }
 
+#firewall rule to allow http and https
 resource "google_compute_firewall" "allow_http" {
   name    = "allow-http-https"
   network = google_compute_network.vpc_network.self_link
@@ -46,6 +47,7 @@ resource "google_compute_firewall" "allow_http" {
   target_tags   = ["web"]
 }
 
+#firewall rule to allow icmp
 resource "google_compute_firewall" "allow_icmp" {
   name    = "allow-icmp"
   network = google_compute_network.vpc_network.self_link
@@ -56,6 +58,20 @@ resource "google_compute_firewall" "allow_icmp" {
 
   source_ranges = ["0.0.0.0/0"]
   target_tags   = ["web"]
+}
+
+#firewall rule to allow db traffic
+resource "google_compute_firewall" "allow_db" {
+  name    = "allow-db"
+  network = google_compute_network.vpc_network.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3306"]
+  }
+
+  source_tags = ["web"]
+  target_tags = ["db"]
 }
 
 #service account for VMs
@@ -92,6 +108,8 @@ resource "google_compute_instance" "database_instance" {
   
   network_interface {
     network = google_compute_network.vpc_network.name
+    access_config {
+    }
   }
 
   #attaches SA to vm
