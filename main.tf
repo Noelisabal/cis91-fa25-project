@@ -137,6 +137,8 @@ resource "google_compute_instance" "database_instance" {
     access_config {
     }
   }
+
+  metadata = {
+    google-ops-agent-policy = "{\"agentRules\":[{\"type\":\"ops-agent\",\"version\":\"latest\",\"packageState\":\"installed\"}]}"
+  }
 }
-
-
