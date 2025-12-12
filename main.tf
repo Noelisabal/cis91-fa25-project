@@ -94,6 +94,43 @@ resource "google_project_iam_member" "logging_writer" {
   member  = "serviceAccount:${google_service_account.vm_sa.email}"
 }
 
+# Storage Bucket for backups
+resource "google_storage_bucket" "backup_bucket" {
+  name          = "${var.project}-backup-bucket" # Bucket names must be globally unique
+  location      = var.region
+  storage_class = "STANDARD"
+
+  # Enforce public access prevention
+  public_access_prevention = "enforced"
+
+  # Use uniform bucket-level access
+  uniform_bucket_level_access = true
+
+  # Enable object versioning
+  versioning {
+    enabled = true
+  }
+
+  # Lifecycle rule to delete objects older than 180 days
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 180
+    }
+  }
+
+  # Lifecycle rule to retain a max of 180 versions
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      num_newer_versions = 180
+    }
+  }
+}
 
 #persistent disk for backup
 resource "google_compute_disk" "db_backup_disk" {
@@ -102,6 +139,7 @@ resource "google_compute_disk" "db_backup_disk" {
   zone = var.zone
   size = 10
 }
+
 #first VM instance for database
 resource "google_compute_instance" "database_instance" {
   name         = "db-instance"
