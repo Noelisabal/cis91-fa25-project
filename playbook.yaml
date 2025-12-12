@@ -54,7 +54,14 @@
     - name: Run chmod command manually
       ansible.builtin.shell: chmod u+rx /usr/local/bin/db-backup.sh
       become: true
-        
+    
+    - name: add a line to crontab
+      ansible.builtin.lineinfile:
+        path: /etc/crontab
+        line: '30 3 * * * root /usr/local/bin/db-backup.sh'
+        insertafter: EOF
+
+
   handlers:
     - name: Restart mariadb
       ansible.builtin.service:
