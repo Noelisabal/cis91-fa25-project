@@ -182,7 +182,8 @@ resource "google_compute_instance" "database_instance" {
 
 #second VM instance for mediawiki
  resource "google_compute_instance" "web_instance" {
-  name         = "web-instance"
+  count        = var.scale
+  name         = "web-instance-${count.index}"
   machine_type = "e2-medium"
   tags         = ["web"]
   allow_stopping_for_update =  true
@@ -208,4 +209,60 @@ resource "google_compute_instance" "database_instance" {
     email  = google_service_account.vm_sa.email
     scopes = ["cloud-platform"]
   }
+}
+
+# Instance group for web servers
+resource "google_compute_instance_group" "web_instance_group" {
+  name      = "web-instance-group"
+  zone      = var.zone
+  instances = google_compute_instance.web_instance[*].self_link
+
+  named_port {
+    name = "http"
+    port = "80"
+  }
+}
+
+# Health check for the load balancer
+resource "google_compute_health_check" "http_health_check" {
+  name = "http-basic-check"
+  check_interval_sec = 5
+  timeout_sec = 5
+  healthy_threshold = 2
+  unhealthy_threshold = 2
+
+  tcp_health_check {
+    port = "80"
+  }
+}
+
+# Backend service for the load balancer
+resource "google_compute_backend_service" "web_backend_service" {
+  name          = "web-backend-service"
+  port_name     = "http"
+  protocol      = "HTTP"
+  health_checks = [google_compute_health_check.http_health_check.self_link]
+
+  backend {
+    group = google_compute_instance_group.web_instance_group.self_link
+  }
+}
+
+# URL map to route requests to the backend service
+resource "google_compute_url_map" "default" {
+  name            = "lb-url-map"
+  default_service = google_compute_backend_service.web_backend_service.self_link
+}
+
+# HTTP proxy to use the URL map
+resource "google_compute_target_http_proxy" "default" {
+  name    = "http-lb-proxy"
+  url_map = google_compute_url_map.default.self_link
+}
+
+# Global forwarding rule to handle and forward incoming requests
+resource "google_compute_global_forwarding_rule" "default" {
+  name       = "http-content-rule"
+  target     = google_compute_target_http_proxy.default.self_link
+  port_range = "80"
 }

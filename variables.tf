@@ -7,3 +7,9 @@ variable "region" {
 variable "zone" {
   default = "us-central1-c"
 }
+
+variable "scale" {
+  description = "Number of web instances to create"
+  type        = number
+  default     = 1
+}
