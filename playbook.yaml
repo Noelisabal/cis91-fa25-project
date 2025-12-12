@@ -45,13 +45,22 @@
         line: 'bind-address = 0.0.0.0'
       notify: Restart mariadb
 
+    - name: Create db-backup.sh script
+      ansible.builtin.copy:
+        src: backupscript.sh
+        dest: /usr/local/bin/db-backup.sh
+        mode: '0755'
+    
+    - name: Run chmod command manually
+      ansible.builtin.shell: chmod u+rx /usr/local/bin/db-backup.sh
+      become: true
+        
   handlers:
     - name: Restart mariadb
       ansible.builtin.service:
         name: mariadb
         state: restarted
-
-
+      
 - hosts: tags_items___web__
   name: Prepare web instance for mediawiki.
   become: yes

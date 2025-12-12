@@ -130,6 +130,14 @@ resource "google_storage_bucket" "backup_bucket" {
       num_newer_versions = 180
     }
   }
+  
+}
+
+# IAM binding for the service account to access the bucket
+resource "google_storage_bucket_iam_member" "sa_bucket_access" {
+  bucket = google_storage_bucket.backup_bucket.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.vm_sa.email}"
 }
 
 #persistent disk for backup
